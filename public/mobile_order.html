@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Order Item</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input, button { font-size: 1.2em; padding: 8px; margin: 10px 0; width: 100%; }
+  </style>
+</head>
+<body>
+  <h2 id="title">Loading...</h2>
+  <p id="link"></p>
+
+  <form id="orderForm">
+    <label for="quantity">Quantity:</label>
+    <input type="number" id="quantity" min="1" value="1" required />
+    <button type="submit">Submit Order</button>
+  </form>
+
+  <p id="status"></p>
+
+  <script src="/mobile_order.js"></script>
+</body>
+</html>
