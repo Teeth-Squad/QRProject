@@ -2,6 +2,7 @@ const { MongoClient } = require('mongodb');
 const dotenv = require('dotenv');
 
 dotenv.config();
+
 const uri = process.env.MONGODB_URI;
 
 module.exports = async (req, res) => {
@@ -12,10 +13,10 @@ module.exports = async (req, res) => {
 
   try {
     // Extract data from the request body
-    const { productName, productUrl, orderQuantity } = req.body;
+    const { productName, productQuantity, productDescription, productUrl, productOrderQuantity } = req.body;
 
     // Validate that the required fields are provided
-    if (!productName || !productUrl || !orderQuantity) {
+    if (!productName || !productQuantity || !productDescription || !productUrl || !productOrderQuantity) {
       return res.status(400).send('Missing fields');
     }
 
@@ -24,12 +25,14 @@ module.exports = async (req, res) => {
     try {
       await client.connect();
       const db = client.db('QRProject');
-      const collection = db.collection('Orders'); // Collection name should match your schema
+      const collection = db.collection('Orders');
 
       const document = {
         productName,
         productUrl,
-        orderQuantity: parseInt(orderQuantity, 10), // Ensure quantity is stored as a number
+        productQuantity,
+        productDescription,
+        productOrderQuantity,
         createdAt: new Date(),
       };
 

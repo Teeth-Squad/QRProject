@@ -1,29 +1,53 @@
 const params = new URLSearchParams(window.location.search);
-const productName = params.get('productName');
-const productUrl = params.get('productUrl');
+const orderForm = document.getElementById('orderForm');
 
-if (productName && productUrl) {
-  document.getElementById('title').textContent = `Order: ${productName}`;
-  document.getElementById('link').innerHTML = `<a href="${productUrl}" target="_blank">${productUrl}</a>`;
-}
+document.getElementById('productName').textContent = params.get('product') || 'N/A';
+document.getElementById('productQuantity').textContent = params.get('quantity') || 'N/A';
+document.getElementById('productDescription').textContent = params.get('description') || 'N/A';
+document.getElementById('productLink').textContent = params.get('URL') || 'N/A';
 
-document.getElementById('orderForm').addEventListener('submit', async function(e) {
+
+
+orderForm.addEventListener("submit", async function (e) {
   e.preventDefault();
-  const quantity = document.getElementById('quantity').value;
 
-  const res = await fetch('/api/add_order', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const productName = document.getElementById('productName').textContent;
+  const productQuantity = document.getElementById('productQuantity').textContent;
+  const productDescription = document.getElementById('productDescription').textContent;
+  const productUrl = params.get('URL'); 
+  const productOrderQuantity = document.getElementById('orderQuantity').value;
+
+  if (productUrl) {
+    productLink.href = productUrl;
+    productLink.textContent = productUrl;
+  } else {
+    productLink.textContent = 'N/A';
+  }
+
+try {
+  const response = await fetch("/api/add_order", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({
-        productName,
-        productUrl,
-        orderQuantity: parseInt(quantity, 10)
-      })
+      productName,
+      productQuantity,
+      productDescription,
+      productUrl,
+      productOrderQuantity
+    })
   });
 
-  if (res.ok) {
-    document.getElementById('status').textContent = '✅ Order submitted successfully!';
-  } else {
-    document.getElementById('status').textContent = '❌ Failed to submit order.';
+  if (!response.ok) {
+    throw new Error("Failed to submit order to server");
   }
+
+  const result = await response.json();
+  console.log("Order submitted:", result);
+  alert("Order submitted successfully!");
+} catch (error) {
+  console.error("Error submitting order:", error);
+  alert("There was a problem submitting your order.");
+}
 });

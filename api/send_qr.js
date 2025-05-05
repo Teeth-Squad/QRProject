@@ -11,9 +11,9 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { productName, productUrl, qrCodeDataUrl } = req.body;
+    const { productName, productUrl, qrCodeDataUrl, productQuantity, productDescription } = req.body;
 
-    if (!productName || !productUrl || !qrCodeDataUrl) {
+    if (!productName || !productUrl || !qrCodeDataUrl || !productQuantity || !productDescription) {
       return res.status(400).send('Missing fields');
     }
 
@@ -24,10 +24,13 @@ module.exports = async function handler(req, res) {
       const db = client.db('QRProject');
       const collection = db.collection('QR_Codes');
 
+      // Create the document to be inserted
       const document = {
         productName,
         productUrl,
         qrCodeDataUrl,
+        productQuantity,
+        productDescription,
         createdAt: new Date()
       };
 
