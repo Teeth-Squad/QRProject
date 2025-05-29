@@ -49,9 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
     vendors.forEach(vendor => {
       tableHTML += `
         <tr>
-          <td style="text-align: center; vertical-align: middle;">${vendor.vendorName}</td>
-          <td style="text-align: center; vertical-align: middle;">${vendor.vendorEmail}</td>
-          <td style="text-align: center; vertical-align: middle;">
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">${vendor.vendorName}</td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${vendor.vendorEmail}</td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">
             <button class="btn btn-danger btn-sm delete-btn" data-id="${vendor._id}">Delete</button>
           </td>
         </tr>

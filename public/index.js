@@ -29,11 +29,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <table class="table table-striped table-hover">
         <thead>
           <tr>
-            <th>Product</th>
-            <th>Order URL</th>
-            <th>Number of Items</th>
-            <th>Order Quantity</th>
-            <th>Created At</th>
+            <th style="border-right: 1px solid #dee2e6;">Product</th>
+            <th style="border-right: 1px solid #dee2e6;">Order URL</th>
+            <th style="border-right: 1px solid #dee2e6;">Number of Items</th>
+            <th style="border-right: 1px solid #dee2e6;">Order Quantity</th>
+            <th style="border-right: 1px solid #dee2e6;">Created At</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -45,12 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       tableHTML += `
         <tr>
-          <td style="vertical-align: middle;">${order.productName}</td>
-          <td style="vertical-align: middle;"><a href="${order.productUrl}" target="_blank">${order.productUrl}</a></td>
-          <td style="vertical-align: middle; text-align: center;">${order.productQuantity}</td>
-          <td style="vertical-align: middle; text-align: center;">${order.productOrderQuantity}</td>
-          <td style="vertical-align: middle;">${createdAtFormatted}</td>
-          <td class="actions-cell">
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">${order.productName}</td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;"><a href="${order.productUrl}" target="_blank">${order.productUrl}</a></td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.productQuantity}</td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.productOrderQuantity}</td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${createdAtFormatted}</td>
+          <td class="actions-cell" style="border-right: 1px solid #dee2e6;">
             <button class="btn btn-danger btn-sm delete-btn" data-id="${order._id}">Delete</button>
           </td>
         </tr>

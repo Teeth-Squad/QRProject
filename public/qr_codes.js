@@ -50,11 +50,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       tableHTML += `
         <tr>
-          <td style="text-align: center;"><img src="${code.qrCodeDataURL}" alt="QR Code" width="80" class="img-fluid rounded border"></td>
-          <td style="text-align: center; vertical-align: middle;">${code.productName}</td>
-          <td style="text-align: center; vertical-align: middle;"><a href="${code.productURL}" target="_blank">${code.productUrl}</a></td>
-          <td style="text-align: center; vertical-align: middle;">${createdAtFormatted}</td>
-          <td style="text-align: center; vertical-align: middle;">
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;"><img src="${code.qrCodeDataURL}" alt="QR Code" width="80" class="img-fluid rounded border"></td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${code.productName}</td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;"><a href="${code.productURL}" target="_blank">${code.productURL}</a></td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${createdAtFormatted}</td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">
             <button class="btn btn-danger btn-sm delete-btn" data-id="${code._id}">Delete</button>
           </td>
         </tr>
@@ -134,5 +134,5 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   fetchAllCodes();
-  setInterval(fetchAllCodes, 15000); // Auto-refresh every 15 seconds
+  setInterval(fetchAllCodes, 15000);
 });
