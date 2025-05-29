@@ -13,10 +13,10 @@ module.exports = async (req, res) => {
 
   try {
     // Extract data from the request body
-    const { productName, productQuantity, productDescription, productUrl, productOrderQuantity } = req.body;
+    const { productName, productQuantity, productUrl, productOrderQuantity } = req.body;
 
     // Validate that the required fields are provided
-    if (!productName || !productQuantity || !productDescription || !productUrl || !productOrderQuantity) {
+    if (!productName || !productQuantity || !productUrl || !productOrderQuantity) {
       return res.status(400).send('Missing fields');
     }
 
@@ -31,7 +31,6 @@ module.exports = async (req, res) => {
         productName,
         productUrl,
         productQuantity,
-        productDescription,
         productOrderQuantity,
         createdAt: new Date(),
       };

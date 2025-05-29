@@ -10,14 +10,12 @@ qrForm.addEventListener("submit", async function (e) {
   const productName = document.getElementById('productName').value;
   const ProductQuantity = document.getElementById('ProductQuantity').value;
   const productUrl = document.getElementById('productUrl').value;
-  const productDescription = document.getElementById('productDescription').value;
 
   const baseUrl = window.location.origin + "/mobile_order.html";
   const params = new URLSearchParams({
     product: productName,
     quantity: ProductQuantity,
-    URL: productUrl,
-    description: productDescription
+    URL: productUrl
   });
   const qrData = `${baseUrl}?${params.toString()}`;
 
@@ -35,7 +33,7 @@ qrForm.addEventListener("submit", async function (e) {
 
     // Send QR code to database via API
     try {
-      const response = await fetch("/api/send_qr", {
+      const response = await fetch("/api/add_qr", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -44,7 +42,6 @@ qrForm.addEventListener("submit", async function (e) {
           productName: productName,
           productUrl: productUrl,
           productQuantity: ProductQuantity,
-          productDescription: productDescription,
           qrCodeDataUrl: qrCodeDataUrl // Include the QR code Data URL here
         })
       });

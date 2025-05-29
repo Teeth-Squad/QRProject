@@ -1,79 +1,101 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    const orders = document.getElementById('orders');
-    
-      try {
-        const response = await fetch('/api/retrieve_orders');
-        if (!response.ok) {
-          throw new Error('Failed to fetch orders');
-        }
-  
-        const data = await response.json();
-        orders.innerHTML = '';
-  
-        if (data.length === 0) {
-          orders.innerHTML = '<p class="text-muted">No orders found.</p>';
-          return;
-        }
+document.addEventListener('DOMContentLoaded', () => {
+  const orders = document.getElementById('orders');
+  const searchBar = document.getElementById('searchBar');
+  let allOrders = [];
 
-      // Loop through the response data and display each order
-        data.forEach(code => {
-          const card = document.createElement('div');
-          card.className = 'card shadow-sm mb-4';
-  
-          const createdAtFormatted = new Date(code.createdAt).toLocaleString();
-
-          card.innerHTML = `
-          <div class="card-body">
-            <h5 class="card-title mb-2">${code.productName}</h5>
-            <p class="card-text mb-1"><strong>URL:</strong> <a href="${code.productUrl}" target="_blank">${code.productUrl}</a></p>
-            <p class="card-text mb-1"><strong>Quantity in Stock:</strong> ${code.productQuantity}</p>
-            <p class="card-text mb-1"><strong>Order Quantity:</strong> ${code.productOrderQuantity}</p>
-            <p class="card-text mb-2"><strong>Description:</strong> ${code.productDescription}</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <p class="card-text text-muted mb-0"><small>Created On: ${createdAtFormatted}</small></p>
-              <button class="btn btn-danger btn-sm" data-id="${code._id}">Delete</button>
-            </div>
-          </div>
-        `;
-  
-        orders.appendChild(card);
-        });
-
-        // Attach button event listeners
-        orders.querySelectorAll('.btn-danger').forEach(btn => {
-        btn.addEventListener('click', async () => {
-        const id = btn.getAttribute('data-id');
-        console.log('Attempting to delete order with ID:', id);  // Log the ID being deleted
-        await handleDelete(id);
-      });
-    });
-
-    orders.querySelectorAll('.btn-secondary').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const imgSrc = btn.getAttribute('data-img');
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`<img src="${imgSrc}" onload="window.print(); window.close();" />`);
-        printWindow.document.close();
-      });
-    });
-
-  } catch (err) {
-    orders.innerHTML = `<p class="text-danger">Error: ${err.message}</p>`;
-    console.error(err);
-  }
-
-  async function handleDelete(id) {
-    if (!confirm('Are you sure you want to delete this order?')) return;
-
-    const deleteUrl = `/api/delete_order?id=${id}`;
-    console.log('Sending delete request to:', deleteUrl);  // Log the URL before sending the delete request
-
+  // Fetch all orders once on page load and on interval
+  async function fetchAllOrders() {
     try {
-      const res = await fetch(deleteUrl, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Delete failed');
-      location.reload(); // Refresh list after deletion
+      const response = await fetch('/api/retrieve_orders');
+      if (!response.ok) throw new Error('Failed to fetch orders');
+      allOrders = await response.json();
+
+      // Re-filter and render using current search term
+      filterAndRender(searchBar.value.trim());
     } catch (err) {
-      alert(`Error deleting QR code: ${err.message}`);
+      orders.innerHTML = `<p class="text-danger">Error: ${err.message}</p>`;
+      console.error(err);
     }
   }
+
+  // Render given order data array
+  function renderOrders(data) {
+    if (data.length === 0) {
+      orders.innerHTML = '<p class="text-muted">No orders found.</p>';
+      return;
+    }
+
+    let tableHTML = `
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Order URL</th>
+            <th>Number of Items</th>
+            <th>Order Quantity</th>
+            <th>Created At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    data.forEach(order => {
+      const createdAtFormatted = new Date(order.createdAt).toLocaleString();
+
+      tableHTML += `
+        <tr>
+          <td style="vertical-align: middle;">${order.productName}</td>
+          <td style="vertical-align: middle;"><a href="${order.productUrl}" target="_blank">${order.productUrl}</a></td>
+          <td style="vertical-align: middle; text-align: center;">${order.productQuantity}</td>
+          <td style="vertical-align: middle; text-align: center;">${order.productOrderQuantity}</td>
+          <td style="vertical-align: middle;">${createdAtFormatted}</td>
+          <td class="actions-cell">
+            <button class="btn btn-danger btn-sm delete-btn" data-id="${order._id}">Delete</button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tableHTML += '</tbody></table>';
+    orders.innerHTML = tableHTML;
+
+    // Attach delete button handlers
+    orders.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        if (!confirm('Are you sure you want to delete this order?')) return;
+
+        try {
+          const res = await fetch(`/api/delete_order?id=${id}`, { method: 'DELETE' });
+          if (!res.ok) throw new Error('Delete failed');
+
+          // Remove deleted order locally and re-render filtered results
+          allOrders = allOrders.filter(order => order._id !== id);
+          filterAndRender(searchBar.value.trim());
+        } catch (err) {
+          alert(`Error deleting order: ${err.message}`);
+        }
+      });
+    });
+  }
+
+  // Filter local data by search term and render
+  function filterAndRender(searchTerm) {
+    const filtered = allOrders.filter(order =>
+      order.productName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    renderOrders(filtered);
+  }
+
+  // Initial fetch of all orders on page load
+  fetchAllOrders();
+
+  // Live filtering on input without debounce
+  searchBar.addEventListener('input', () => {
+    filterAndRender(searchBar.value.trim());
+  });
+
+  // Add 5-second interval to refresh orders from server
+  setInterval(fetchAllOrders, 15000);
 });

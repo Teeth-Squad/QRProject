@@ -1,86 +1,138 @@
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   const qrCodes = document.getElementById('qrCodes');
-  
-  try {
-    const response = await fetch('/api/retrieve_qr');
-    if (!response.ok) {
-      throw new Error('Failed to fetch QR codes');
+  const searchInput = document.getElementById('searchInput');
+  const qrForm = document.getElementById('QRCodeForm');
+  let allCodes = [];
+
+  async function fetchAllCodes() {
+    try {
+      const response = await fetch('/api/retrieve_qr');
+      if (!response.ok) throw new Error('Failed to fetch QR codes');
+      allCodes = await response.json();
+
+      const currentSearch = searchInput.value.trim();
+      filterAndRender(currentSearch);
+    } catch (err) {
+      qrCodes.innerHTML = `<p class="text-danger">Error: ${err.message}</p>`;
+      console.error(err);
     }
+  }
 
-    const data = await response.json();
-    qrCodes.innerHTML = '';
+  function filterAndRender(searchTerm) {
+    const filtered = allCodes.filter(code =>
+      code.productName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    renderCodes(filtered);
+  }
 
-    if (data.length === 0) {
+  function renderCodes(data) {
+    if (!data.length) {
       qrCodes.innerHTML = `<p class="text-muted">No QR codes found.</p>`;
       return;
     }
 
-    // Loop through the response data and display each QR code
-    data.forEach(code => {
-      const card = document.createElement('div');
-      card.className = 'card shadow-sm mb-4';
-
-      const createdAtFormatted = new Date(code.createdAt).toLocaleString();
-
-      card.innerHTML = ` 
-      <div class="d-flex align-items-start gap-4 p-3">
-        <div>
-          <img src="${code.qrCodeDataUrl}" alt="QR Code" width="150" class="img-fluid rounded border">
-        </div>
-        <div class="flex-grow-1 d-flex flex-column justify-content-between">
-          <div class="pb-2">
-            <h5 class="mb-2">${code.productName}</h5>
-            <p class="mb-1"><a href="${code.productUrl}" target="_blank">${code.productUrl}</a></p>
-          </div>
-          <div class="d-flex justify-content-between align-items-end mt-3">
-            <p class="text-muted mb-0 align-self-center"><small>Created On: ${createdAtFormatted}</small></p>
-            <div class="d-flex gap-2">
-              <button class="btn btn-secondary" data-img="${code.qrCodeDataUrl}">Print</button>
-              <button class="btn btn-danger" data-id="${code._id}">Delete</button>
-            </div>
-          </div>
-        </div>
-      </div>
+    let tableHTML = `
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th style="text-align: center; border-right: 1px solid #dee2e6;">QR Code</th>
+            <th style="text-align: center; border-right: 1px solid #dee2e6;">Name</th>
+            <th style="text-align: center; border-right: 1px solid #dee2e6;">URL</th>
+            <th style="text-align: center; border-right: 1px solid #dee2e6;">Create Date</th>
+            <th style="text-align: center;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
     `;
 
-      qrCodes.appendChild(card);
+    data.forEach(code => {
+      const createdAtFormatted = new Date(code.createdAt).toLocaleString();
+
+      tableHTML += `
+        <tr>
+          <td style="text-align: center;"><img src="${code.qrCodeDataURL}" alt="QR Code" width="80" class="img-fluid rounded border"></td>
+          <td style="text-align: center; vertical-align: middle;">${code.productName}</td>
+          <td style="text-align: center; vertical-align: middle;"><a href="${code.productURL}" target="_blank">${code.productUrl}</a></td>
+          <td style="text-align: center; vertical-align: middle;">${createdAtFormatted}</td>
+          <td style="text-align: center; vertical-align: middle;">
+            <button class="btn btn-danger btn-sm delete-btn" data-id="${code._id}">Delete</button>
+          </td>
+        </tr>
+      `;
     });
 
-    // Attach button event listeners
-    qrCodes.querySelectorAll('.btn-danger').forEach(btn => {
+    tableHTML += `</tbody></table>`;
+    qrCodes.innerHTML = tableHTML;
+
+    qrCodes.querySelectorAll('.delete-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-id');
-        console.log('Attempting to delete QR code with ID:', id);  // Log the ID being deleted
-        await handleDelete(id);
+        if (!confirm('Are you sure you want to delete this QR code?')) return;
+
+        try {
+          const res = await fetch(`/api/delete_qr?id=${id}`, { method: 'DELETE' });
+          if (!res.ok) throw new Error('Delete failed');
+
+          allCodes = allCodes.filter(code => code._id !== id);
+          filterAndRender(searchInput.value.trim());
+        } catch (err) {
+          alert(`Error deleting QR code: ${err.message}`);
+        }
       });
     });
+  }
 
-    qrCodes.querySelectorAll('.btn-secondary').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const imgSrc = btn.getAttribute('data-img');
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`<img src="${imgSrc}" onload="window.print(); window.close();" />`);
-        printWindow.document.close();
-      });
+  qrForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const productName = document.getElementById('productName').value.trim();
+    const productQuantity = document.getElementById('productQuantity').value.trim();
+    const productURL = document.getElementById('productURL').value.trim();
+
+    const baseUrl = window.location.origin + "/mobile_order.html";
+    const params = new URLSearchParams({
+      product: productName,
+      quantity: productQuantity,
+      URL: productURL
     });
 
-  } catch (err) {
-    qrCodes.innerHTML = `<p class="text-danger">Error: ${err.message}</p>`;
-    console.error(err);
-  }
+    const qrData = `${baseUrl}?${params.toString()}`;
 
-  async function handleDelete(id) {
-    if (!confirm('Are you sure you want to delete this QR code?')) return;
+    QRCode.toDataURL(qrData, { width: 150, height: 150 }, async function (err, qrCodeDataURL) {
+      if (err) {
+        console.error("Error generating QR code:", err);
+        return;
+      }
 
-    const deleteUrl = `/api/delete_qr?id=${id}`;
-    console.log('Sending delete request to:', deleteUrl);  // Log the URL before sending the delete request
+      try {
+        const res = await fetch('/api/add_qr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productName,
+            productQuantity,
+            productURL,
+            qrCodeDataURL
+          })
+        });
 
-    try {
-      const res = await fetch(deleteUrl, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Delete failed');
-      location.reload(); // Refresh list after deletion
-    } catch (err) {
-      alert(`Error deleting QR code: ${err.message}`);
-    }
-  }
+        if (!res.ok) throw new Error('Failed to add QR Code');
+
+        qrForm.reset();
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addQRCodeModal'));
+        modal.hide();
+
+        fetchAllCodes();
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    });
+  });
+
+  searchInput.addEventListener('input', () => {
+    filterAndRender(searchInput.value.trim());
+  });
+
+  fetchAllCodes();
+  setInterval(fetchAllCodes, 15000); // Auto-refresh every 15 seconds
 });
