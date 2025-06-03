@@ -3,20 +3,41 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('searchInput');
   const qrForm = document.getElementById('QRCodeForm');
   const modalElement = document.getElementById('addQRCodeModal');
+  const vendorSelect = document.getElementById('vendorSelect');
   let allCodes = [];
 
   modalElement.addEventListener("hide.bs.modal", () => {
     const focused = modalElement.querySelector(":focus");
     if (focused) focused.blur();
-
     qrForm.reset();
   });
+
+  async function fetchVendors() {
+    try {
+      const res = await fetch('/api/retrieve_vendors');
+      if (!res.ok) throw new Error('Failed to fetch vendors');
+      const vendors = await res.json();
+
+      vendorSelect.innerHTML = '<option value="N/A">N/A</option>';
+      vendors.forEach(vendor => {
+      const option = document.createElement('option');
+      option.value = vendor._id;
+      option.textContent = vendor.vendorName;
+      vendorSelect.appendChild(option);
+    });
+    } catch (err) {
+      console.error('Vendor fetch error:', err);
+      vendorSelect.innerHTML = '<option disabled>Error loading vendors</option>';
+    }
+  }
 
   async function fetchAllCodes() {
     try {
       const response = await fetch('/api/retrieve_qr');
       if (!response.ok) throw new Error('Failed to fetch QR codes');
       allCodes = await response.json();
+
+      console.log(allCodes)
 
       const currentSearch = searchInput.value.trim();
       filterAndRender(currentSearch);
@@ -46,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <th style="text-align: center; border-right: 1px solid #dee2e6;">QR Code</th>
             <th style="text-align: center; border-right: 1px solid #dee2e6;">Name</th>
             <th style="text-align: center; border-right: 1px solid #dee2e6;">URL</th>
+            <th style="text-align: center; border-right: 1px solid #dee2e6;">Vendor</th>
             <th style="text-align: center; border-right: 1px solid #dee2e6;">Create Date</th>
             <th style="text-align: center;">Action</th>
           </tr>
@@ -61,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;"><img src="${code.qrCodeDataURL}" alt="QR Code" width="80" class="img-fluid rounded border"></td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${code.productName}</td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;"><a href="${code.productURL}" target="_blank">${code.productURL}</a></td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${code.vendorName}</td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${createdAtFormatted}</td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">
             <button class="btn btn-danger btn-sm delete-btn" data-id="${code._id}">Delete</button>
@@ -92,49 +115,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
   qrForm.addEventListener('submit', async function (e) {
     e.preventDefault();
+    const submitBtn = qrForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
 
-    const productName = document.getElementById('productName').value.trim();
-    const productQuantity = document.getElementById('productQuantity').value.trim();
-    const productURL = document.getElementById('productURL').value.trim();
+    try {
+      const productName = document.getElementById('productName').value.trim();
+      const productQuantity = document.getElementById('productQuantity').value.trim();
+      const productURL = document.getElementById('productURL').value.trim();
+      const vendorId = vendorSelect.value;
 
-    const baseUrl = window.location.origin + "/mobile_order.html";
-    const params = new URLSearchParams({
-      product: productName,
-      quantity: productQuantity,
-      URL: productURL
-    });
+      const baseUrl = window.location.origin + "/mobile_order.html";
+      const params = new URLSearchParams({
+        product: productName,
+        quantity: productQuantity,
+        URL: productURL
+      });
 
-    const qrData = `${baseUrl}?${params.toString()}`;
+      const qrData = `${baseUrl}?${params.toString()}`;
 
-    QRCode.toDataURL(qrData, { width: 150, height: 150 }, async function (err, qrCodeDataURL) {
+      QRCode.toDataURL(qrData, { width: 150, height: 150 }, async function (err, qrCodeDataURL) {
       if (err) {
         console.error("Error generating QR code:", err);
+        submitBtn.disabled = false; // re-enable on error
         return;
       }
 
-      try {
-        const res = await fetch('/api/add_qr', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            productName,
-            productQuantity,
-            productURL,
-            qrCodeDataURL
-          })
-        });
+        try {
+          const res = await fetch('/api/add_qr', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productName,
+              productQuantity,
+              productURL,
+              vendorId,
+              qrCodeDataURL
+            })
+          });
 
-        if (!res.ok) throw new Error('Failed to add QR Code');
+          if (!res.ok) throw new Error('Failed to add QR Code');
 
-        qrForm.reset();
-        const modal = bootstrap.Modal.getInstance(document.getElementById('addQRCodeModal'));
-        modal.hide();
+          qrForm.reset();
+          const modal = bootstrap.Modal.getInstance(document.getElementById('addQRCodeModal'));
+          modal.hide();
 
-        fetchAllCodes();
-      } catch (err) {
-        alert(`Error: ${err.message}`);
-      }
-    });
+          fetchAllCodes();
+        } catch (err) {
+          alert(`Error: ${err.message}`);
+        }
+        submitBtn.disabled = false;
+      });
+    } catch (err) {
+      console.error("Submission error:", error);
+      alert("Something went wrong. Please try again.");
+      submitBtn.disabled = false;
+    }
   });
 
   searchInput.addEventListener('input', () => {
@@ -142,5 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   fetchAllCodes();
+  fetchVendors(); // <== fetch vendors on page load
   setInterval(fetchAllCodes, 15000);
 });
