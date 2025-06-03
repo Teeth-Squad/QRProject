@@ -2,6 +2,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const vendorList = document.getElementById('vendorList');
   const vendorForm = document.getElementById('vendorForm');
   const searchInput = document.getElementById('searchInput');
+  const modalElement = document.getElementById('addVendorModal');
+
+  modalElement.addEventListener("hide.bs.modal", () => {
+    const focused = modalElement.querySelector(":focus");
+    if (focused) focused.blur();
+
+    vendorForm.reset();
+  });
 
   let allVendors = [];
 

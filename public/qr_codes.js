@@ -2,7 +2,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const qrCodes = document.getElementById('qrCodes');
   const searchInput = document.getElementById('searchInput');
   const qrForm = document.getElementById('QRCodeForm');
+  const modalElement = document.getElementById('addQRCodeModal');
   let allCodes = [];
+
+  modalElement.addEventListener("hide.bs.modal", () => {
+    const focused = modalElement.querySelector(":focus");
+    if (focused) focused.blur();
+
+    qrForm.reset();
+  });
 
   async function fetchAllCodes() {
     try {
