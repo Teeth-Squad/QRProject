@@ -20,11 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       vendorSelect.innerHTML = '<option value="N/A">N/A</option>';
       vendors.forEach(vendor => {
-      const option = document.createElement('option');
-      option.value = vendor._id;
-      option.textContent = vendor.vendorName;
-      vendorSelect.appendChild(option);
-    });
+        const option = document.createElement('option');
+        option.value = vendor._id;
+        option.textContent = vendor.vendorName;
+        vendorSelect.appendChild(option);
+      });
     } catch (err) {
       console.error('Vendor fetch error:', err);
       vendorSelect.innerHTML = '<option disabled>Error loading vendors</option>';
@@ -33,14 +33,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function fetchAllCodes() {
     try {
-      const response = await fetch('/api/retrieve_qr');
+      const response = await fetch('/api/retrieve_qrs');
       if (!response.ok) throw new Error('Failed to fetch QR codes');
       allCodes = await response.json();
-
-      console.log(allCodes)
-
-      const currentSearch = searchInput.value.trim();
-      filterAndRender(currentSearch);
+      filterAndRender(searchInput.value.trim());
     } catch (err) {
       qrCodes.innerHTML = `<p class="text-danger">Error: ${err.message}</p>`;
       console.error(err);
@@ -64,12 +60,12 @@ document.addEventListener('DOMContentLoaded', () => {
       <table class="table table-striped table-hover">
         <thead>
           <tr>
-            <th style="text-align: center; border-right: 1px solid #dee2e6;">QR Code</th>
-            <th style="text-align: center; border-right: 1px solid #dee2e6;">Name</th>
-            <th style="text-align: center; border-right: 1px solid #dee2e6;">URL</th>
-            <th style="text-align: center; border-right: 1px solid #dee2e6;">Vendor</th>
-            <th style="text-align: center; border-right: 1px solid #dee2e6;">Create Date</th>
-            <th style="text-align: center;">Action</th>
+            <th style="text-align: center;"><input type="checkbox" id="selectAll"></th>
+            <th style="text-align: center;">QR Code</th>
+            <th style="text-align: center;">Name</th>
+            <th style="text-align: center;">URL</th>
+            <th style="text-align: center;">Vendor</th>
+            <th style="text-align: center;">Create Date</th>
           </tr>
         </thead>
         <tbody>
@@ -77,17 +73,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     data.forEach(code => {
       const createdAtFormatted = new Date(code.createdAt).toLocaleString();
-
       tableHTML += `
-        <tr>
-          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;"><img src="${code.qrCodeDataURL}" alt="QR Code" width="80" class="img-fluid rounded border"></td>
-          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${code.productName}</td>
-          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;"><a href="${code.productURL}" target="_blank">${code.productURL}</a></td>
-          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${code.vendorName}</td>
-          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${createdAtFormatted}</td>
-          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">
-            <button class="btn btn-danger btn-sm delete-btn" data-id="${code._id}">Delete</button>
+        <tr id="qrCard-${code._id}">
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">
+            <input type="checkbox" class="row-checkbox" data-id="${code._id}">
           </td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">
+            <img id="qrImg-${code._id}" src="${code.qrCodeDataURL}" alt="QR Code" width="80" class="img-fluid rounded border">
+          </td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">${code.productName}</td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">
+            <a href="${code.productURL}" target="_blank">${code.productURL}</a>
+          </td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">${code.vendorName}</td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">${createdAtFormatted}</td>
         </tr>
       `;
     });
@@ -95,23 +94,128 @@ document.addEventListener('DOMContentLoaded', () => {
     tableHTML += `</tbody></table>`;
     qrCodes.innerHTML = tableHTML;
 
-    qrCodes.querySelectorAll('.delete-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.getAttribute('data-id');
-        if (!confirm('Are you sure you want to delete this QR code?')) return;
-
-        try {
-          const res = await fetch(`/api/delete_qr?id=${id}`, { method: 'DELETE' });
-          if (!res.ok) throw new Error('Delete failed');
-
-          allCodes = allCodes.filter(code => code._id !== id);
-          filterAndRender(searchInput.value.trim());
-        } catch (err) {
-          alert(`Error deleting QR code: ${err.message}`);
-        }
+    // Add checkbox select all behavior
+    const selectAllCheckbox = document.getElementById('selectAll');
+    selectAllCheckbox.addEventListener('change', (e) => {
+      const checked = e.target.checked;
+      qrCodes.querySelectorAll('.row-checkbox').forEach(cb => {
+        cb.checked = checked;
       });
     });
   }
+
+  document.getElementById('deleteSelectedBtn').addEventListener('click', async () => {
+  const selectedCheckboxes = qrCodes.querySelectorAll('.row-checkbox:checked');
+  if (selectedCheckboxes.length === 0) {
+    alert('No QR codes selected.');
+    return;
+  }
+
+  if (!confirm(`Delete ${selectedCheckboxes.length} selected QR code(s)?`)) return;
+
+  const idsToDelete = Array.from(selectedCheckboxes).map(cb => cb.getAttribute('data-id'));
+
+  try {
+    for (const id of idsToDelete) {
+      const res = await fetch(`/api/delete_qrs?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`Failed to delete item with id ${id}`);
+    }
+
+    allCodes = allCodes.filter(code => !idsToDelete.includes(code._id));
+    filterAndRender(searchInput.value.trim());
+  } catch (err) {
+    alert(`Error deleting selected QR codes: ${err.message}`);
+  }
+});
+
+function printSelectedQRCodes() {
+  // Select all checked row checkboxes
+  const checkedBoxes = document.querySelectorAll('#qrCodes .row-checkbox:checked');
+
+  if (checkedBoxes.length === 0) {
+    alert('Please select at least one QR code to print.');
+    return;
+  }
+
+  // Build HTML content for printing
+  let printContent = `
+    <html>
+    <head>
+      <title>Print QR Codes</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          padding: 20px;
+        }
+        .qr-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 20px;
+          justify-content: flex-start;
+        }
+        .qr-item {
+          border: 1px solid #ddd;
+          padding: 10px;
+          width: 200px;
+          text-align: center;
+          page-break-inside: avoid;
+        }
+        .qr-item img {
+          max-width: 150px;
+          height: auto;
+          margin-bottom: 10px;
+        }
+        .qr-item .name {
+          font-weight: bold;
+          margin-bottom: 5px;
+        }
+        .qr-item .vendor {
+          color: #555;
+          font-size: 0.9em;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>Selected QR Codes</h1>
+      <div class="qr-grid">
+  `;
+
+  checkedBoxes.forEach(checkbox => {
+    const tr = checkbox.closest('tr');
+    if (!tr) return;
+
+    const img = tr.querySelector('img');
+    const name = tr.cells[2]?.textContent || ''; // productName cell
+    const vendor = tr.cells[4]?.textContent || ''; // vendorName cell
+
+    printContent += `
+      <div class="qr-item">
+        <img src="${img?.src || ''}" alt="QR code for ${name}" />
+        <div class="name">${name}</div>
+        <div class="vendor">${vendor}</div>
+      </div>
+    `;
+  });
+
+  printContent += `
+      </div>
+    </body>
+    </html>
+  `;
+
+  // Open a new window and write the content
+  const printWindow = window.open('', '', 'width=800,height=600');
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+
+  printWindow.onload = function () {
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+}
+
+document.getElementById('printSelectedBtn').addEventListener('click', printSelectedQRCodes);
 
   qrForm.addEventListener('submit', async function (e) {
     e.preventDefault();
@@ -134,14 +238,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const qrData = `${baseUrl}?${params.toString()}`;
 
       QRCode.toDataURL(qrData, { width: 150, height: 150 }, async function (err, qrCodeDataURL) {
-      if (err) {
-        console.error("Error generating QR code:", err);
-        submitBtn.disabled = false; // re-enable on error
-        return;
-      }
+        if (err) {
+          console.error("Error generating QR code:", err);
+          submitBtn.disabled = false;
+          return;
+        }
 
         try {
-          const res = await fetch('/api/add_qr', {
+          const res = await fetch('/api/add_qrs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -156,17 +260,17 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!res.ok) throw new Error('Failed to add QR Code');
 
           qrForm.reset();
-          const modal = bootstrap.Modal.getInstance(document.getElementById('addQRCodeModal'));
+          const modal = bootstrap.Modal.getInstance(modalElement);
           modal.hide();
-
-          fetchAllCodes();
+          await fetchAllCodes();
         } catch (err) {
           alert(`Error: ${err.message}`);
         }
+
         submitBtn.disabled = false;
       });
     } catch (err) {
-      console.error("Submission error:", error);
+      console.error("Submission error:", err);
       alert("Something went wrong. Please try again.");
       submitBtn.disabled = false;
     }
@@ -177,6 +281,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   fetchAllCodes();
-  fetchVendors(); // <== fetch vendors on page load
-  setInterval(fetchAllCodes, 15000);
+  fetchVendors();
+  setInterval(fetchAllCodes, 1500000);
 });

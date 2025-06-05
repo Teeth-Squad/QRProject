@@ -34,6 +34,22 @@
         text-align: center;
         vertical-align: middle;
     }
+
+    .btn-emoji {
+        background: transparent;
+        border: none;
+        font-size: 1.25rem;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .btn-emoji:hover {
+        background-color: #f0f0f0;
+        border-radius: 4px;
+    }
     </style>
 </head>
 
@@ -55,7 +71,7 @@
                             <a class="nav-link" href="index.html">Order List</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="qr_codes.html">QR-codes</a>
+                            <a class="nav-link" href="qr_codes.html">QR-Codes</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="vendors.html">Vendors</a>
@@ -69,12 +85,26 @@
     <main class="content">
         <div class="container py-4">
             <div class="d-flex justify-content-between align-items-center mb-4" style="height: 50px;">
+                <div class="d-flex align-items-center" style="
+                    border: 1px solid #ccc;
+                    border-radius: 8px;
+                    padding: 0 12px;
+                    height: 50px;
+                ">
+                <button class="btn btn-emoji px-3" data-bs-toggle="modal" data-bs-target="#addQRCodeModal">➕</button>
 
+                <div style="width: 1px; height: 60%; background-color: #ccc;"></div>
+
+                <button id="deleteSelectedBtn" class="btn btn-emoji px-3">🗑️</button>
+
+                <div style="width: 1px; height: 60%; background-color: #ccc;"></div>
+
+                <button id="printSelectedBtn" class="btn btn-emoji px-3">🖨️</button>
+                </div>
                 <h2 class="mb-0" style="line-height: 1;">QR Codes</h2>
 
-                <div class="d-flex" style="gap: 8px;">
-                    <input type="text" id="searchInput" class="form-control" placeholder="Search..." style="max-width: 250px;">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addQRCodeModal"><strong>Add</strong></button>
+                <div>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search..." style="width: 210px; height: 50px;">
                 </div>
             </div>
             <div id="qrCodes"></div>
@@ -101,7 +131,7 @@
                         <div class="mb-3">
                         <label for="vendorSelect" class="form-label">Vendor</label>
                         <select id="vendorSelect" class="form-select">
-                            <option value="">Select Vendor</option>
+                            <option value="">LOADING</option>
                         </select>
                         </div>
                     </div>

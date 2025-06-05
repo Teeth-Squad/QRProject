@@ -46,9 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
       <table class="table table-striped table-hover">
         <thead>
           <tr>
-            <th style="text-align: center; border-right: 1px solid #dee2e6;">Name</th>
-            <th style="text-align: center; border-right: 1px solid #dee2e6;">Email</th>
-            <th style="text-align: center;">Action</th>
+            <th style="text-align: center;"><input type="checkbox" id="selectAll"></th>
+            <th style="text-align: center;">Name</th>
+            <th style="text-align: center;">Email</th>
           </tr>
         </thead>
         <tbody>
@@ -56,12 +56,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     vendors.forEach(vendor => {
       tableHTML += `
-        <tr>
+        <tr id="qrCard-${vendor._id}">
+          <td style="vertical-align: middle; text-align: center;">
+            <input type="checkbox" class="row-checkbox" data-id="${vendor._id}">
+          </td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">${vendor.vendorName}</td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${vendor.vendorEmail}</td>
-          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">
-            <button class="btn btn-danger btn-sm delete-btn" data-id="${vendor._id}">Delete</button>
-          </td>
         </tr>
       `;
     });
@@ -69,24 +69,53 @@ document.addEventListener('DOMContentLoaded', () => {
     tableHTML += `</tbody></table>`;
     vendorList.innerHTML = tableHTML;
 
-    // Attach delete handlers
-    vendorList.querySelectorAll('.delete-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.getAttribute('data-id');
-        if (!confirm('Are you sure you want to delete this vendor?')) return;
-
-        try {
-          const res = await fetch(`/api/delete_vendor?id=${id}`, { method: 'DELETE' });
-          if (!res.ok) throw new Error('Delete failed');
-
-          allVendors = allVendors.filter(v => v._id !== id);
-          filterAndRender(searchInput.value.trim());
-        } catch (err) {
-          alert(`Error deleting vendor: ${err.message}`);
-        }
+    // Add checkbox select all behavior
+    const selectAllCheckbox = document.getElementById('selectAll');
+    selectAllCheckbox.addEventListener('change', (e) => {
+      const checked = e.target.checked;
+      vendorList.querySelectorAll('.row-checkbox').forEach(cb => {
+        cb.checked = checked;
       });
     });
   }
+
+  const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+
+deleteSelectedBtn.addEventListener('click', async () => {
+  const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+  const selectedIds = Array.from(checkboxes).map(cb => cb.dataset.id);
+
+  if (selectedIds.length === 0) {
+    alert('No vendors selected.');
+    return;
+  }
+
+  const confirmed = confirm(`Delete ${selectedIds.length} vendor(s)?`);
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch('/api/delete_vendors', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ ids: selectedIds })
+    });
+
+    if (response.ok) {
+      selectedIds.forEach(id => {
+        const row = document.getElementById(`vendorRow-${id}`);
+        if (row) row.remove();
+      });
+    } else {
+      alert('Failed to delete vendors.');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('An error occurred while deleting vendors.');
+  }
+});
+
 
   // Handle form submission
   vendorForm.addEventListener('submit', async (e) => {
@@ -124,5 +153,5 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchAllVendors();
 
   // Auto-refresh every 15 seconds
-  setInterval(fetchAllVendors, 15000);
+  setInterval(fetchAllVendors, 1500000);
 });

@@ -1,6 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
   const orders = document.getElementById('orders');
+  const orderForm = document.getElementById('orderForm');
   const searchBar = document.getElementById('searchBar');
+  const modalElement = document.getElementById('addOrderModal');
+
+  modalElement.addEventListener("hide.bs.modal", () => {
+    const focused = modalElement.querySelector(":focus");
+    if (focused) focused.blur();
+
+    orderForm.reset();
+
+  });
+
   let allOrders = [];
 
   // Fetch all orders once on page load and on interval
@@ -10,8 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!response.ok) throw new Error('Failed to fetch orders');
       allOrders = await response.json();
 
-      // Re-filter and render using current search term
-      filterAndRender(searchBar.value.trim());
+      const currentSearch = searchInput.value.trim();
+      filterAndRender(currentSearch);
     } catch (err) {
       orders.innerHTML = `<p class="text-danger">Error: ${err.message}</p>`;
       console.error(err);
@@ -20,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Render given order data array
   function renderOrders(data) {
-    if (data.length === 0) {
+    if (!data.length) {
       orders.innerHTML = '<p class="text-muted">No orders found.</p>';
       return;
     }
@@ -29,12 +40,12 @@ document.addEventListener('DOMContentLoaded', () => {
       <table class="table table-striped table-hover">
         <thead>
           <tr>
-            <th style="border-right: 1px solid #dee2e6;">Product</th>
-            <th style="border-right: 1px solid #dee2e6;">Order URL</th>
-            <th style="border-right: 1px solid #dee2e6;">Number of Items</th>
-            <th style="border-right: 1px solid #dee2e6;">Order Quantity</th>
-            <th style="border-right: 1px solid #dee2e6;">Created At</th>
-            <th>Actions</th>
+            <th style="text-align: center;"><input type="checkbox" id="selectAll"></th>
+            <th style="text-align: center;">Product</th>
+            <th style="text-align: center;">Order URL</th>
+            <th style="text-align: center;">Number of Items</th>
+            <th style="text-align: center;">Order Quantity</th>
+            <th style="text-align: center;">Created At</th>
           </tr>
         </thead>
         <tbody>
@@ -44,15 +55,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const createdAtFormatted = new Date(order.createdAt).toLocaleString();
 
       tableHTML += `
-        <tr>
+        <tr id="qrCard-${data._id}">
+          <td style="vertical-align: middle; text-align: center;">
+            <input type="checkbox" class="row-checkbox" data-id="${data._id}">
+          </td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">${order.productName}</td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;"><a href="${order.productUrl}" target="_blank">${order.productUrl}</a></td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.productQuantity}</td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.productOrderQuantity}</td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${createdAtFormatted}</td>
-          <td class="actions-cell" style="border-right: 1px solid #dee2e6;">
-            <button class="btn btn-danger btn-sm delete-btn" data-id="${order._id}">Delete</button>
-          </td>
         </tr>
       `;
     });
@@ -60,22 +71,12 @@ document.addEventListener('DOMContentLoaded', () => {
     tableHTML += '</tbody></table>';
     orders.innerHTML = tableHTML;
 
-    // Attach delete button handlers
-    orders.querySelectorAll('.delete-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.getAttribute('data-id');
-        if (!confirm('Are you sure you want to delete this order?')) return;
-
-        try {
-          const res = await fetch(`/api/delete_order?id=${id}`, { method: 'DELETE' });
-          if (!res.ok) throw new Error('Delete failed');
-
-          // Remove deleted order locally and re-render filtered results
-          allOrders = allOrders.filter(order => order._id !== id);
-          filterAndRender(searchBar.value.trim());
-        } catch (err) {
-          alert(`Error deleting order: ${err.message}`);
-        }
+    // Add checkbox select all behavior
+    const selectAllCheckbox = document.getElementById('selectAll');
+    selectAllCheckbox.addEventListener('change', (e) => {
+      const checked = e.target.checked;
+      orders.querySelectorAll('.row-checkbox').forEach(cb => {
+        cb.checked = checked;
       });
     });
   }
@@ -92,8 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchAllOrders();
 
   // Live filtering on input without debounce
-  searchBar.addEventListener('input', () => {
-    filterAndRender(searchBar.value.trim());
+  searchInput.addEventListener('input', () => {
+    filterAndRender(searchInput.value.trim());
   });
 
   // Add 5-second interval to refresh orders from server

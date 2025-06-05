@@ -10,30 +10,45 @@
     crossorigin="anonymous" />
 
     <style>
-        html, 
-        body {
-            height: 100%;
-        }
+    html, 
+    body {
+        height: 100%;
+    }
 
-        .page-container {
-            display: flex;
-            flex-direction: column;
-            min-height: 100%;
-        }
+    .page-container {
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+    }
 
-        .content {
-            flex-grow: 1;
-        }
+    .content {
+        flex-grow: 1;
+    }
 
-        table thead th {
-            text-align: center;
-            vertical-align: middle;
-        }
+    table thead th {
+        text-align: center;
+        vertical-align: middle;
+    }
 
-        .table td.actions-cell {
-            text-align: center;
-            vertical-align: middle;
-        }
+    .table td.actions-cell {
+        text-align: center;
+        vertical-align: middle;
+    }
+    .btn-emoji {
+        background: transparent;
+        border: none;
+        font-size: 1.25rem;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .btn-emoji:hover {
+        background-color: #f0f0f0;
+        border-radius: 4px;
+    } 
     </style>
 </head>
 
@@ -67,19 +82,31 @@
     </header>
 
   <main class="content">
-    <div class="container py-4">
-      <div class="d-flex justify-content-between align-items-center mb-4" style="height: 50px;">
+      <div class="container py-4">
+            <div class="d-flex justify-content-between align-items-center mb-4" style="height: 50px;">
+                <div class="d-flex align-items-center" style="
+                    border: 1px solid #ccc;
+                    border-radius: 8px;
+                    padding: 0 12px;
+                    height: 50px;
+                ">
+                <button class="btn btn-emoji px-3" data-bs-toggle="modal" data-bs-target="#addVendorModal">➕</button>
 
-        <h2 class="mb-0" style="line-height: 1;">Vendors</h2>
+                <div style="width: 1px; height: 60%; background-color: #ccc;"></div>
 
-        <div class="d-flex" style="gap: 8px;">
-          <input type="text" id="searchInput" class="form-control" placeholder="Search..." style="max-width: 250px;" />
-          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addVendorModal"><strong>Add</strong></button>
+                <button id="deleteSelectedBtn" class="btn btn-emoji px-3">🗑️</button>
+              
+                </div>
+
+                <h2 class="mb-0" style="line-height: 1;">Vendors</h2>
+
+                <div>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search..." style="width: 210px; height: 50px;">
+                </div>
+            </div>
+            <div id="vendorList"></div>
         </div>
 
-    </div>
-    <div id="vendorList"></div>
-  </div>
   
 
   <div class="modal fade" id="addVendorModal" tabindex="-1" aria-labelledby="addVendorModalLabel">
@@ -106,10 +133,6 @@
       </div>
     </div>
   </div>
-
-    <div>
-      
-    </div>
   </main>
 
     <footer class="bg-dark text-light text-center py-3">
