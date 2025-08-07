@@ -33,6 +33,7 @@ module.exports = async (req, res) => {
         productQuantity,
         productOrderQuantity,
         createdAt: new Date(),
+        isAvtive: true
       };
 
       const result = await collection.insertOne(document);

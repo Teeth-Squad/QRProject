@@ -5,23 +5,84 @@ const productNameElem = document.getElementById('productName');
 const productQuantityElem = document.getElementById('productQuantity');
 const productLink = document.getElementById('productLink');
 
-productNameElem.textContent = params.get('product') || 'N/A';
-productQuantityElem.textContent = params.get('quantity') || 'N/A';
-productLink.textContent = params.get('URL') || 'N/A';
+let productData = null;
 
-const productUrl = params.get('URL');
-if (productUrl) {
-  productLink.href = productUrl;
-  productLink.textContent = productUrl;
-} else {
+// Function to fetch product data using UID
+async function fetchProductByUID(uid) {
+  try {
+    const response = await fetch(`/api/retrieve_qrs_by_uid?uid=${encodeURIComponent(uid)}`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch product data');
+    }
+
+    const data = await response.json();
+
+    // If you expect a single object instead of an array:
+    return data[0]; // Assuming backend returns an array with one matching result
+  } catch (error) {
+    console.error('Error fetching product data:', error);
+    throw error;
+  }
+}
+
+// Function to display product information
+function displayProductInfo(data) {
+  productNameElem.textContent = data.productName || 'N/A';
+  productQuantityElem.textContent = data.productQuantity || 'N/A';
+  
+  if (data.productURL) {
+    productLink.href = data.productURL;
+    productLink.textContent = data.productURL;
+  } else {
+    productLink.textContent = 'N/A';
+  }
+}
+
+// Function to show loading state
+function showLoading() {
+  productNameElem.textContent = 'Loading...';
+  productQuantityElem.textContent = 'Loading...';
+  productLink.textContent = 'Loading...';
+}
+
+// Function to show error state
+function showError() {
+  productNameElem.textContent = 'Error loading product';
+  productQuantityElem.textContent = 'N/A';
   productLink.textContent = 'N/A';
 }
 
+// Initialize the page
+async function initializePage() {
+  const uid = params.get('uid');
+  
+  if (!uid) {
+    console.error('No UID found in URL parameters');
+    showError();
+    return;
+  }
+  
+  showLoading();
+  
+  try {
+    productData = await fetchProductByUID(uid);
+    displayProductInfo(productData);
+  } catch (error) {
+    console.error('Failed to load product data:', error);
+    showError();
+  }
+}
+
+// Order form submission
 orderForm.addEventListener("submit", async function (e) {
   e.preventDefault();
 
-  const productName = productNameElem.textContent;
-  const productQuantity = productQuantityElem.textContent;
+  if (!productData) {
+    alert('Product data not loaded. Please refresh the page.');
+    return;
+  }
+
   const productOrderQuantity = document.getElementById('orderQuantity').value;
 
   try {
@@ -31,10 +92,12 @@ orderForm.addEventListener("submit", async function (e) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        productName,
-        productQuantity,
-        productUrl,
-        productOrderQuantity
+        uid: params.get('uid'),
+        productName: productData.productName,
+        productQuantity: productData.productQuantity,
+        productUrl: productData.productURL,
+        productOrderQuantity,
+        timestamp: new Date().toISOString()
       })
     });
 
@@ -52,3 +115,6 @@ orderForm.addEventListener("submit", async function (e) {
     alert("There was a problem submitting your order.");
   }
 });
+
+// Initialize the page when it loads
+document.addEventListener('DOMContentLoaded', initializePage);

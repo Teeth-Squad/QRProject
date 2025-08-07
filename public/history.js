@@ -5,18 +5,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const qrDropdown = document.getElementById('qrDropdown');
   const orderQuantityInput = document.getElementById('orderQuantity');
 
-  modalElement.addEventListener("hide.bs.modal", () => {
-    const focused = modalElement.querySelector(":focus");
-    if (focused) focused.blur();
-    orderForm.reset();
-  });
-
   let allOrders = [];
   let qrCodes = [];
 
   async function fetchAllOrders() {
     try {
-      const response = await fetch('/api/retrieve_active_orders');
+      const response = await fetch('/api/retrieve_inactive_orders');
       if (!response.ok) throw new Error('Failed to fetch orders');
       allOrders = await response.json();
       const currentSearch = searchInput.value.trim();
@@ -42,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <th style="text-align: center;">Order URL</th>
             <th style="text-align: center;">Number of Items</th>
             <th style="text-align: center;">Order Quantity</th>
-            <th style="text-align: center;">Vendor</th>
             <th style="text-align: center;">Created At</th>
           </tr>
         </thead>
@@ -60,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;"><a href="${order.productUrl}" target="_blank">${order.productUrl}</a></td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.productQuantity}</td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.productOrderQuantity}</td>
-          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.vendorName}</td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${createdAtFormatted}</td>
         </tr>
       `;
@@ -98,47 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  orderForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const submitBtn = orderForm.querySelector('button[type="submit"]');
-    submitBtn.disabled = true;
-
-    try {
-      const selectedQr = JSON.parse(qrDropdown.value);
-      const productOrderQuantity = parseInt(orderQuantityInput.value);
-
-      if (!selectedQr || !productOrderQuantity || isNaN(productOrderQuantity) || productOrderQuantity <= 0) {
-        alert('Please fill in all fields with valid values.');
-        submitBtn.disabled = false;
-        return;
-      }
-
-      const payload = {
-        productName: selectedQr.productName,
-        productQuantity: selectedQr.productQuantity,
-        productUrl: selectedQr.productURL,
-        productOrderQuantity
-      };
-
-      const res = await fetch('/api/add_order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) throw new Error('Failed to add order');
-
-      await fetchAllOrders();
-      bootstrap.Modal.getInstance(modalElement).hide();
-    } catch (err) {
-      alert(`Error adding order: ${err.message}`);
-      console.error(err);
-    } finally {
-      submitBtn.disabled = false;
-    }
-  });
-
   fetchAllOrders();
   fetchQrCodes();
 
@@ -175,33 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }})
 
   const completeSelectedBtn = document.getElementById('completeSelectedBtn');
-
-  completeSelectedBtn.addEventListener('click', async () => {
-    const checkboxes = document.querySelectorAll('.row-checkbox:checked');
-    if (!checkboxes.length) {
-      alert('No orders selected for completion.');
-      return;
-    }
-
-    const confirmComplete = confirm(`Complete ${checkboxes.length} selected order(s)?`);
-    if (!confirmComplete) return;
-
-    for (const checkbox of checkboxes) {
-      const id = checkbox.getAttribute('data-id');
-      try {
-        const response = await fetch(`/api/complete_orders?id=${id}`, {method: 'PATCH' });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error(`Error updating order ${id}:`, errorData.error);
-        }
-      } catch (err) {
-        console.error(`Failed to update the order ${id}:`, err);
-      }
-    }
-
-    await fetchAllOrders();
-  });
 
   setInterval(fetchAllOrders, 15000);
 });

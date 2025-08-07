@@ -12,9 +12,14 @@ module.exports = async function handler(req, res) {
     const collection = db.collection('Orders');
 
     const { productName } = req.query;
-    const query = productName
-      ? { productName: { $regex: productName, $options: 'i' } }
-      : {};
+
+    // Always filter for active orders
+    const query = {
+      isAvtive: true,
+      ...(productName && {
+        productName: { $regex: productName, $options: 'i' }
+      })
+    };
 
     const orderResults = await collection.find(query).toArray();
 

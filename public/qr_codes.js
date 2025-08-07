@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const qrForm = document.getElementById('QRCodeForm');
   const modalElement = document.getElementById('addQRCodeModal');
   const vendorSelect = document.getElementById('vendorSelect');
+  
   let allCodes = [];
 
   modalElement.addEventListener("hide.bs.modal", () => {
@@ -11,6 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (focused) focused.blur();
     qrForm.reset();
   });
+
+  // Generate a unique identifier
+  function generateUID() {
+    return 'qr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
 
   async function fetchVendors() {
     try {
@@ -105,117 +111,117 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.getElementById('deleteSelectedBtn').addEventListener('click', async () => {
-  const selectedCheckboxes = qrCodes.querySelectorAll('.row-checkbox:checked');
-  if (selectedCheckboxes.length === 0) {
-    alert('No QR codes selected.');
-    return;
-  }
-
-  if (!confirm(`Delete ${selectedCheckboxes.length} selected QR code(s)?`)) return;
-
-  const idsToDelete = Array.from(selectedCheckboxes).map(cb => cb.getAttribute('data-id'));
-
-  try {
-    for (const id of idsToDelete) {
-      const res = await fetch(`/api/delete_qrs?id=${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(`Failed to delete item with id ${id}`);
+    const selectedCheckboxes = qrCodes.querySelectorAll('.row-checkbox:checked');
+    if (selectedCheckboxes.length === 0) {
+      alert('No QR codes selected.');
+      return;
     }
 
-    allCodes = allCodes.filter(code => !idsToDelete.includes(code._id));
-    filterAndRender(searchInput.value.trim());
-  } catch (err) {
-    alert(`Error deleting selected QR codes: ${err.message}`);
-  }
-});
+    if (!confirm(`Delete ${selectedCheckboxes.length} selected QR code(s)?`)) return;
 
-function printSelectedQRCodes() {
-  // Select all checked row checkboxes
-  const checkedBoxes = document.querySelectorAll('#qrCodes .row-checkbox:checked');
+    const idsToDelete = Array.from(selectedCheckboxes).map(cb => cb.getAttribute('data-id'));
 
-  if (checkedBoxes.length === 0) {
-    alert('Please select at least one QR code to print.');
-    return;
-  }
+    try {
+      for (const id of idsToDelete) {
+        const res = await fetch(`/api/delete_qrs?id=${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error(`Failed to delete item with id ${id}`);
+      }
 
-  // Build HTML content for printing
-  let printContent = `
-    <html>
-    <head>
-      <title>Print QR Codes</title>
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          padding: 20px;
-        }
-        .qr-grid {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 20px;
-          justify-content: flex-start;
-        }
-        .qr-item {
-          border: 1px solid #ddd;
-          padding: 10px;
-          width: 200px;
-          text-align: center;
-          page-break-inside: avoid;
-        }
-        .qr-item img {
-          max-width: 150px;
-          height: auto;
-          margin-bottom: 10px;
-        }
-        .qr-item .name {
-          font-weight: bold;
-          margin-bottom: 5px;
-        }
-        .qr-item .vendor {
-          color: #555;
-          font-size: 0.9em;
-        }
-      </style>
-    </head>
-    <body>
-      <h1>Selected QR Codes</h1>
-      <div class="qr-grid">
-  `;
-
-  checkedBoxes.forEach(checkbox => {
-    const tr = checkbox.closest('tr');
-    if (!tr) return;
-
-    const img = tr.querySelector('img');
-    const name = tr.cells[2]?.textContent || ''; // productName cell
-    const vendor = tr.cells[4]?.textContent || ''; // vendorName cell
-
-    printContent += `
-      <div class="qr-item">
-        <img src="${img?.src || ''}" alt="QR code for ${name}" />
-        <div class="name">${name}</div>
-        <div class="vendor">${vendor}</div>
-      </div>
-    `;
+      allCodes = allCodes.filter(code => !idsToDelete.includes(code._id));
+      filterAndRender(searchInput.value.trim());
+    } catch (err) {
+      alert(`Error deleting selected QR codes: ${err.message}`);
+    }
   });
 
-  printContent += `
-      </div>
-    </body>
-    </html>
-  `;
+  function printSelectedQRCodes() {
+    const checkedBoxes = document.querySelectorAll('#qrCodes .row-checkbox:checked');
 
-  // Open a new window and write the content
-  const printWindow = window.open('', '', 'width=800,height=600');
-  printWindow.document.write(printContent);
-  printWindow.document.close();
+    if (checkedBoxes.length === 0) {
+      alert('Please select at least one QR code to print.');
+      return;
+    }
 
-  printWindow.onload = function () {
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
-  };
-}
+    let printContent = `
+      <html>
+      <head>
+        <title>Print QR Codes</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+          }
+          .qr-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: flex-start;
+          }
+          .qr-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            width: calc(33.33% - 20px); /* 3 columns with 20px gap */
+            box-sizing: border-box;
+            text-align: center;
+            page-break-inside: avoid;
+          }
+          .qr-item img {
+            max-width: 150px;
+            height: auto;
+            margin-bottom: 10px;
+          }
+          .qr-item .name {
+            font-weight: bold;
+            margin-bottom: 5px;
+          }
+          .qr-item .vendor {
+            color: #555;
+            font-size: 0.9em;
+          }
+          .qr-item .uid {
+            color: #888;
+            font-size: 0.8em;
+            font-family: monospace;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="qr-grid">
+    `;
 
-document.getElementById('printSelectedBtn').addEventListener('click', printSelectedQRCodes);
+    checkedBoxes.forEach(checkbox => {
+      const tr = checkbox.closest('tr');
+      if (!tr) return;
+
+      const img = tr.querySelector('img');
+      const name = tr.cells[3]?.textContent || ''; // productName cell
+
+      printContent += `
+        <div class="qr-item">
+          <img src="${img?.src || ''}" alt="QR code for ${name}" />
+          <div class="name">${name}</div>
+        </div>
+      `;
+    });
+
+    printContent += `
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '', 'width=800,height=600');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    printWindow.onload = function () {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    };
+  }
+
+  document.getElementById('printSelectedBtn').addEventListener('click', printSelectedQRCodes);
 
   qrForm.addEventListener('submit', async function (e) {
     e.preventDefault();
@@ -228,14 +234,12 @@ document.getElementById('printSelectedBtn').addEventListener('click', printSelec
       const productURL = document.getElementById('productURL').value.trim();
       const vendorId = vendorSelect.value;
 
-      const baseUrl = window.location.origin + "/mobile_order.html";
-      const params = new URLSearchParams({
-        product: productName,
-        quantity: productQuantity,
-        URL: productURL
-      });
+      // Generate a unique identifier for this QR code
+      const uid = generateUID();
 
-      const qrData = `${baseUrl}?${params.toString()}`;
+      // The QR code now only contains the UID and points to a lookup page
+      const baseUrl = window.location.origin + "/mobile_order.html";
+      const qrData = `${baseUrl}?uid=${uid}`;
 
       QRCode.toDataURL(qrData, { width: 150, height: 150 }, async function (err, qrCodeDataURL) {
         if (err) {
@@ -245,15 +249,17 @@ document.getElementById('printSelectedBtn').addEventListener('click', printSelec
         }
 
         try {
+          // Send all the data to the database, including the UID
           const res = await fetch('/api/add_qrs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              productName,
-              productQuantity,
-              productURL,
-              vendorId,
-              qrCodeDataURL
+              uid: uid,                    // The unique identifier
+              productName: productName,    // Still stored in DB
+              productQuantity: productQuantity, // Still stored in DB
+              productURL: productURL,      // Still stored in DB
+              vendorId: vendorId,         // Still stored in DB
+              qrCodeDataURL: qrCodeDataURL // The QR code image
             })
           });
 

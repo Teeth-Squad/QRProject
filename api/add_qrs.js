@@ -11,9 +11,9 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { productName, productURL, qrCodeDataURL, productQuantity, vendorId } = req.body;
+    const { productName, productURL, qrCodeDataURL, productQuantity, vendorId, uid } = req.body;
 
-    if (!productName || !productURL || !qrCodeDataURL || !productQuantity || !vendorId ) {
+    if (!productName || !productURL || !qrCodeDataURL || !productQuantity || !vendorId || !uid) {
       return res.status(400).send('Missing fields');
     }
 
@@ -26,6 +26,7 @@ module.exports = async function handler(req, res) {
 
       // Create the document to be inserted
       const document = {
+        uid,
         productName,
         productURL,
         qrCodeDataURL,

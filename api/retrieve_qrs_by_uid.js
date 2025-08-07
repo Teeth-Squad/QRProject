@@ -11,15 +11,17 @@ module.exports = async function handler(req, res) {
     const client = await connectToDatabase();
     const db = client.db('QRProject');
 
-    const { productName } = req.query;
+    const { uid, productName } = req.query;
 
-    // Build search filter
-    const matchStage = productName
-      ? { productName: { $regex: productName, $options: 'i' } }
-      : {};
+    // Build match filter based on query
+    let matchStage = {};
 
-    // Aggregate QR codes with vendor lookup,
-    // but exclude vendorId 'N/A' from lookup (keep vendorName as "N/A")
+    if (uid) {
+      matchStage.uid = uid;
+    } else if (productName) {
+      matchStage.productName = { $regex: productName, $options: 'i' };
+    }
+
     const qrCodes = await db.collection('QR_Codes').aggregate([
       { $match: matchStage },
       {

@@ -71,6 +71,9 @@
                             <a class="nav-link" href="index.html">Order List</a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="history.html">Order History</a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="qr_codes.html">QR-Codes</a>
                         </li>
                         <li class="nav-item">
@@ -82,25 +85,17 @@
           </nav>
     </header>
 
-    <main class="content">
-        <div class="container py-4">
-            <div class="d-flex justify-content-between align-items-center mb-4" style="height: 50px;">
-                <div class="d-flex align-items-center" style="
-                    border: 1px solid #ccc;
-                    border-radius: 8px;
-                    padding: 0 12px;
-                    height: 50px;
-                ">
-                <button class="btn btn-emoji px-3" data-bs-toggle="modal" data-bs-target="#addQRCodeModal">➕</button>
+<main class="content">
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4" style="height: 50px;">
+            <div class="d-flex align-items-center" style="border: 1px solid #ccc; border-radius: 8px; padding: 0 12px; height: 50px;">
+            <button class="btn btn-emoji px-3" data-bs-toggle="modal" data-bs-target="#addQRCodeModal" aria-label="Add QR Code">➕</button>
+            <div style="width: 1px; height: 60%; background-color: #ccc; margin: 0 10px;"></div>
+            <button id="deleteSelectedBtn" class="btn btn-emoji px-3" aria-label="Delete Selected Vendors">🗑️</button>
+            <div style="width: 1px; height: 60%; background-color: #ccc; margin: 0 10px;"></div>
+            <button id="printSelectedBtn" class="btn btn-emoji px-3">🖨️</button>
+        </div>
 
-                <div style="width: 1px; height: 60%; background-color: #ccc;"></div>
-
-                <button id="deleteSelectedBtn" class="btn btn-emoji px-3">🗑️</button>
-
-                <div style="width: 1px; height: 60%; background-color: #ccc;"></div>
-
-                <button id="printSelectedBtn" class="btn btn-emoji px-3">🖨️</button>
-                </div>
                 <h2 class="mb-0" style="line-height: 1;">QR Codes</h2>
 
                 <div>
