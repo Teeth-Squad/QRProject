@@ -111,7 +111,7 @@ function capitalize(str) {
       return;
     }
 
-    const confirmed = confirm(`Delete ${selectedIds.length} vendor(s)?`);
+    const confirmed = confirm(`Delete ${selectedIds.length} vendor(s)?\nWarning: Deleting a vendor will also remove it from any linked QR codes or orders.`);
     if (!confirmed) return;
 
     try {
@@ -135,6 +135,7 @@ function capitalize(str) {
       console.error(err);
       alert('An error occurred while deleting vendors.');
     }
+    fetchAllVendors();
   });
 
   vendorForm.addEventListener('submit', async function (e) {
@@ -189,7 +190,11 @@ function capitalize(str) {
         throw new Error(errText);
       }
 
-      alert("Vendor added successfully!");
+      await fetchAllVendors();
+
+      const modalInstance = bootstrap.Modal.getInstance(document.getElementById('addVendorModal'));
+      modalInstance.hide();
+
       vendorForm.reset();
 
     } catch (err) {
@@ -212,5 +217,4 @@ function capitalize(str) {
   });
 
   fetchAllVendors();
-  setInterval(fetchAllVendors, 15000);
 });

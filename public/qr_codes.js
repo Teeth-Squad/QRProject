@@ -100,7 +100,6 @@ document.addEventListener('DOMContentLoaded', () => {
     tableHTML += `</tbody></table>`;
     qrCodes.innerHTML = tableHTML;
 
-    // Add checkbox select all behavior
     const selectAllCheckbox = document.getElementById('selectAll');
     selectAllCheckbox.addEventListener('change', (e) => {
       const checked = e.target.checked;
@@ -194,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!tr) return;
 
       const img = tr.querySelector('img');
-      const name = tr.cells[3]?.textContent || ''; // productName cell
+      const name = tr.cells[2]?.textContent || ''; // productName cell
 
       printContent += `
         <div class="qr-item">
@@ -288,5 +287,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
   fetchAllCodes();
   fetchVendors();
-  setInterval(fetchAllCodes, 1500000);
 });

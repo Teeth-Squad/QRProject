@@ -173,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (err) {
         console.error(`Failed to delete order ${id}:`, err);
       }
+      await fetchAllOrders();
     }})
 
   const completeSelectedBtn = document.getElementById('completeSelectedBtn');
@@ -203,6 +204,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     await fetchAllOrders();
   });
-
-  setInterval(fetchAllOrders, 15000);
 });

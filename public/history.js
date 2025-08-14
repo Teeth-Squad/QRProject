@@ -124,9 +124,8 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (err) {
         console.error(`Failed to delete order ${id}:`, err);
       }
+      fetchAllOrders();
     }})
 
   const completeSelectedBtn = document.getElementById('completeSelectedBtn');
-
-  setInterval(fetchAllOrders, 15000);
 });
