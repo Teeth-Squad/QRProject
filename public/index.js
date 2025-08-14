@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <input type="checkbox" class="row-checkbox" data-id="${order._id}">
           </td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">${order.productName}</td>
-          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;"><a href="${order.productUrl}" target="_blank">${order.productUrl}</a></td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;"><a href="${order.productURL}" target="_blank">${order.productURL}</a></td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.productQuantity}</td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.productOrderQuantity}</td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.vendorName}</td>
@@ -117,8 +117,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const payload = {
         productName: selectedQr.productName,
         productQuantity: selectedQr.productQuantity,
-        productUrl: selectedQr.productURL,
-        productOrderQuantity
+        productURL: selectedQr.productURL,
+        productOrderQuantity,
+        vendorName: selectedQr.vendorName
       };
 
       const res = await fetch('/api/add_order', {

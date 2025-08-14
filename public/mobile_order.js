@@ -10,7 +10,7 @@ let productData = null;
 // Function to fetch product data using UID
 async function fetchProductByUID(uid) {
   try {
-    const response = await fetch(`/api/retrieve_qrs_by_uid?uid=${encodeURIComponent(uid)}`);
+    const response = await fetch(`/api/retrieve_qrs?uid=${encodeURIComponent(uid)}`);
     
     if (!response.ok) {
       throw new Error('Failed to fetch product data');
@@ -37,6 +37,8 @@ function displayProductInfo(data) {
   } else {
     productLink.textContent = 'N/A';
   }
+
+  productData.vendorName = data.vendorName || null;
 }
 
 // Function to show loading state
@@ -95,8 +97,9 @@ orderForm.addEventListener("submit", async function (e) {
         uid: params.get('uid'),
         productName: productData.productName,
         productQuantity: productData.productQuantity,
-        productUrl: productData.productURL,
+        productURL: productData.productURL,
         productOrderQuantity,
+        vendorName: productData.vendorName,
         timestamp: new Date().toISOString()
       })
     });

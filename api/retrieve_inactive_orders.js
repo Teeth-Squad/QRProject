@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
 
     // Always filter for active orders
     const query = {
-      isAvtive: false,
+      isActive: false,
       ...(productName && {
         productName: { $regex: productName, $options: 'i' }
       })

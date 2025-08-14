@@ -13,10 +13,10 @@ module.exports = async (req, res) => {
 
   try {
     // Extract data from the request body
-    const { productName, productQuantity, productUrl, productOrderQuantity } = req.body;
+    const { productName, productQuantity, productURL, productOrderQuantity, vendorName } = req.body;
 
     // Validate that the required fields are provided
-    if (!productName || !productQuantity || !productUrl || !productOrderQuantity) {
+    if (!productName || !productQuantity || !productURL || !productOrderQuantity || !vendorName) {
       return res.status(400).send('Missing fields');
     }
 
@@ -29,11 +29,12 @@ module.exports = async (req, res) => {
 
       const document = {
         productName,
-        productUrl,
+        productURL,
         productQuantity,
         productOrderQuantity,
+        vendorName,
         createdAt: new Date(),
-        isAvtive: true
+        isActive: true
       };
 
       const result = await collection.insertOne(document);

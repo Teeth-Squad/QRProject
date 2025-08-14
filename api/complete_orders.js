@@ -30,7 +30,7 @@ module.exports = async function handler(req, res) {
 
     const result = await collection.updateOne(
       { _id: objectId },
-      { $set: { isAvtive: false } }
+      { $set: { isActive: false } }
     );
 
     if (result.matchedCount === 0) {
