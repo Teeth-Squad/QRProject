@@ -203,6 +203,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     await fetchAllOrders();
   });
-
-  setInterval(fetchAllOrders, 15000);
 });
