@@ -118,7 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
         productName: selectedQr.productName,
         productQuantity: selectedQr.productQuantity,
         productURL: selectedQr.productURL,
-        productOrderQuantity
+        productOrderQuantity: productOrderQuantity,
+        vendorName: selectedQr.vendorName || 'Unknown'
       };
 
       const res = await fetch('/api/add_order', {
