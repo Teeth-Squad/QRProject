@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/send_vendor_email",
-      "schedule": "46 21 * * *"
-    }
-  ]
-}
