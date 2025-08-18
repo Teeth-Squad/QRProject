@@ -184,3 +184,22 @@ if (require.main === module) {
 
 // Export main for external use
 module.exports = main;
+
+module.exports = async (req, res) => {
+  try {
+    await main(); // run your existing function
+
+    return res.status(200).json({
+      ok: true,
+      message: 'Vendor email job completed',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('💥 send_vendor_email failed:', err);
+    return res.status(500).json({
+      ok: false,
+      error: err.message || 'Server error',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
