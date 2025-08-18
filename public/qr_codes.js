@@ -265,8 +265,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const uid = generateUID();
 
             // Create QR code data
-            const baseUrl = window.location.origin + "/mobile_order.html";
-            const qrData = `${baseUrl}?uid=${uid}`;
+            const baseURL = window.location.origin + "/mobile_order.html";
+            const qrData = `${baseURL}?uid=${uid}`;
 
             // Generate QR code image
             QRCode.toDataURL(qrData, { width: 150, height: 150 }, async function (err, qrCodeDataURL) {
