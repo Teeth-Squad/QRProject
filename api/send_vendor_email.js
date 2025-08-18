@@ -182,19 +182,5 @@ if (require.main === module) {
     main();
 }
 
-module.exports = async (req, res) => {
-  try {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
-    }
-
-    console.log('➡️ /api/send_vendor_email started');
-    const summary = await runJob();
-    console.log('✅ /api/send_vendor_email completed', summary);
-
-    return res.status(200).json({ ok: true, ...summary });
-  } catch (err) {
-    console.error('💥 /api/send_vendor_email failed:', err?.response?.data || err.message);
-    return res.status(500).json({ ok: false, error: err.message });
-  }
-};
+// Export main for external use
+module.exports = main;
