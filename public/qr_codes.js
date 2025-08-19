@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                     <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">${code.productName}</td>
                     <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">
-                        <a href="${code.productURL}" target="_blank">${code.productURL}</a>
+                        <a href="${code.productURL}" target="_blank">Product Order Page</a>
                     </td>
                     <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">${code.vendorName}</td>
                     <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">${createdAtFormatted}</td>
