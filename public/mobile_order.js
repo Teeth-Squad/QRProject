@@ -33,7 +33,7 @@ function displayProductInfo(data) {
     
     if (data.productURL) {
         productLink.href = data.productURL;
-        productLink.textContent = data.productURL;
+        productLink.textContent = 'Product Order Page';
     } else {
         productLink.textContent = 'N/A';
     }

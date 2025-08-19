@@ -57,7 +57,20 @@ document.addEventListener('DOMContentLoaded', () => {
             <input type="checkbox" class="row-checkbox" data-id="${order._id}">
           </td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">${order.productName}</td>
-          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;"><a href="${order.productURL}" target="_blank">${order.productURL}</a></td>
+          <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;"><a href="${order.productURL}" target="_blank">// Function to display product information
+function displayProductInfo(data) {
+    productNameElem.textContent = data.productName || 'N/A';
+    productQuantityElem.textContent = data.productQuantity || 'N/A';
+    
+    if (data.productURL) {
+        productLink.href = data.productURL;
+        productLink.textContent = 'Link';
+    } else {
+        productLink.textContent = 'N/A';
+    }
+
+    productData.vendorName = data.vendorName || null;
+}</a></td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.productQuantity}</td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.productOrderQuantity}</td>
           <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.vendorName}</td>

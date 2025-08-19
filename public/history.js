@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <input type="checkbox" class="row-checkbox" data-id="${order._id}">
                     </td>
                     <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6; border-left: 1px solid #dee2e6;">${order.productName}</td>
-                    <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;"><a href="${order.productURL}" target="_blank">${order.productURL}</a></td>
+                    <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;"><a href="${order.productURL}" target="_blank">Product Order Page</a></td>
                     <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.productQuantity}</td>
                     <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.productOrderQuantity}</td>
                     <td style="vertical-align: middle; text-align: center; border-right: 1px solid #dee2e6;">${order.vendorName}</td>
