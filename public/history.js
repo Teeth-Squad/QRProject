@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         data.forEach(order => {
+            
             const createdAtFormatted = new Date(order.createdAt).toLocaleString();
             tableHTML += `
                 <tr id="qrCard-${order._id}">
