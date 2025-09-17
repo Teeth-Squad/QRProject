@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const filtered = allCodes.filter(code =>
             code.productName.toLowerCase().includes(searchTerm.toLowerCase())
         );
+        filtered.sort((a, b) => a.productName.localeCompare(b.productName));
         renderCodes(filtered);
     }
 
