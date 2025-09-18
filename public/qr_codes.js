@@ -193,15 +193,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     .qr-grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: flex-start; }
                     .qr-item {
                         border: 1px solid #ddd;
-                        padding: 10px;
-                        width: calc(33.33% - 20px);
+                        padding: 5px;
+                        width: calc(25% - 20px);
                         box-sizing: border-box;
                         text-align: center;
                         page-break-inside: avoid;
                     }
-                    .qr-item img { max-width: 150px; height: auto; margin-bottom: 10px; }
+                    .qr-item img { max-width: 75px; height: auto; margin-bottom: 5px; }
                     .qr-item .name { font-weight: bold; margin-bottom: 5px; }
-                    .qr-item .vendor { color: #555; font-size: 0.9em; }
+                    .qr-item .vendor { color: #555; font-size: 0.7em; }
                     .qr-item .uid { color: #888; font-size: 0.8em; font-family: monospace; }
                 </style>
             </head>
