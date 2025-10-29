@@ -1,9 +1,7 @@
-// api/send_vendor_email.js  (CommonJS for Vercel Pages functions)
-
 const { MongoClient, ObjectId } = require('mongodb');
 const axios = require('axios');
 
-// ===== Env (set in Vercel dashboard; do NOT use dotenv on Vercel) =====
+// ===== Env =====
 const {
   MONGODB_URI,
   AZURE_TENANT_ID,
@@ -13,20 +11,20 @@ const {
   CRON_SECRET,
 } = process.env;
 
-// ===== Mongo client reuse across invocations =====
+const DB_NAME = 'QRProject';
+const DEFAULT_TZ = 'America/Los_Angeles';
+
+// ===== Mongo client reuse =====
 let mongoClient;
 async function getDb() {
   if (!mongoClient) mongoClient = new MongoClient(MONGODB_URI);
-  // Topology check works for both v4 & v5 drivers
   if (!mongoClient.topology || mongoClient.topology.isDestroyed?.() || !mongoClient.topology.isConnected?.()) {
     await mongoClient.connect();
   }
-  return mongoClient.db('QRProject');
+  return mongoClient.db(DB_NAME);
 }
 
-// ===== Timezone helpers (midnight local window) =====
-const DEFAULT_TZ = 'America/Los_Angeles';
-
+// ===== Timezone helpers (midnight-window) =====
 function toZonedDate(date, timeZone = DEFAULT_TZ) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone,
@@ -45,9 +43,9 @@ function startOfDayZoned(date, tz = DEFAULT_TZ) {
   return d;
 }
 function startOfLocalDay(date, tz = DEFAULT_TZ) {
-  return startOfDayZoned(date, tz); // already midnight local (as UTC)
+  return startOfDayZoned(date, tz); // local midnight expressed in UTC
 }
-function startOfWeekdayWindow(date, tz, dayOfWeek /*0=Sun..6=Sat*/) {
+function startOfWeekdayWindow(date, tz, dayOfWeek /*0..6*/) {
   const z = toZonedDate(date, tz);
   const todayStart = startOfLocalDay(z, tz);
   const curDow = todayStart.getUTCDay();
@@ -55,8 +53,7 @@ function startOfWeekdayWindow(date, tz, dayOfWeek /*0=Sun..6=Sat*/) {
   sunday.setUTCDate(sunday.getUTCDate() - curDow);
   const win = new Date(sunday);
   win.setUTCDate(win.getUTCDate() + dayOfWeek);
-  // it's already 00:00 local because we anchored to local-midnight
-  return win;
+  return win; // 00:00 local for that weekday
 }
 function startOfMonthDayWindow(date, tz, dom /*1..31*/) {
   const z = toZonedDate(date, tz);
@@ -67,41 +64,78 @@ function startOfMonthDayWindow(date, tz, dom /*1..31*/) {
   return new Date(Date.UTC(y, m, d, 0, 0, 0));
 }
 
-// ===== Cadence parsing =====
+// ===== Cadence parsing/normalization (supports your existing shapes) =====
+function dayNameToIndex(s) {
+  if (s == null) return undefined;
+  const k = String(s).trim().toLowerCase().slice(0, 3);
+  return ({ sun:0, mon:1, tue:2, tues:2, wed:3, thu:4, thur:4, fri:5, sat:6 })[k];
+}
+
 function parseCadence(cadence) {
   const base = typeof cadence === 'object' && cadence ? cadence : {};
   const out = {
-    type: (base.type || (typeof cadence === 'string' ? cadence.split(' ')[0] : '') || '').toLowerCase(),
+    type: (base.type || (typeof cadence === 'string' ? cadence.split(' ')[0] : '') || '')
+      .toLowerCase()
+      .replace(/_/g, '-'), // accept "every_x_weeks"
     timeZone: base.timeZone || DEFAULT_TZ,
-    // hour/minute intentionally ignored by window logic; left for compatibility
+    // hour/minute retained for compatibility but not used by midnight-window
     hour: base.hour ?? 9,
     minute: base.minute ?? 0,
   };
 
+  // Weekly list normalization:
+  // - accept `daysOfWeek: [0..6]`
+  // - accept `days: ["tuesday", 2, ...]` (your current format)
+  let daysOfWeek = [];
+  if (Array.isArray(base.daysOfWeek)) {
+    daysOfWeek = base.daysOfWeek.filter(n => Number.isInteger(n) && n >= 0 && n <= 6);
+  } else if (Array.isArray(base.days)) {
+    daysOfWeek = base.days
+      .map(d => Number.isInteger(d) ? d : dayNameToIndex(d))
+      .filter(n => Number.isInteger(n) && n >= 0 && n <= 6);
+  }
+  if (daysOfWeek.length) out.daysOfWeek = [...new Set(daysOfWeek)].sort((a,b) => a-b);
+
+  // String shortcuts still work (e.g., "weekly on tuesday")
   if (typeof cadence === 'string') {
     const s = cadence.trim().toLowerCase();
     if (s.startsWith('weekly on')) {
       out.type = 'weekly';
-      const dayStr = s.replace('weekly on', '').trim();
-      const map = { sun:0, mon:1, tue:2, tues:2, wed:3, thu:4, thur:4, fri:5, sat:6 };
-      out.dayOfWeek = map[dayStr.slice(0,3)] ?? 2;
+      const idx = dayNameToIndex(s.replace('weekly on', '').trim());
+      if (Number.isInteger(idx)) out.dayOfWeek = idx;
     } else if (s === 'daily') {
       out.type = 'daily';
     } else if (s.startsWith('monthly on')) {
       out.type = 'monthly';
-      const n = parseInt(s.replace('monthly on','').trim(), 10);
-      if (!Number.isNaN(n)) out.dayOfMonth = Math.min(Math.max(n,1),31);
+      const n = parseInt(s.replace('monthly on', '').trim(), 10);
+      if (!Number.isNaN(n)) out.dayOfMonth = Math.min(Math.max(n, 1), 31);
     }
     return out;
   }
-  if (out.type === 'weekly' && typeof base.dayOfWeek === 'number') out.dayOfWeek = Math.max(0, Math.min(6, base.dayOfWeek));
-  if (out.type === 'monthly' && typeof base.dayOfMonth === 'number') out.dayOfMonth = Math.max(1, Math.min(31, base.dayOfMonth));
-  if (out.type === 'every-x-weeks' && typeof base.interval === 'number') out.interval = Math.max(1, Math.floor(base.interval));
-  if (Array.isArray(base.daysOfWeek)) out.daysOfWeek = base.daysOfWeek;
+
+  // Object forms (numbers/alt keys)
+  if (out.type === 'weekly') {
+    if (Number.isInteger(base.dayOfWeek)) out.dayOfWeek = Math.max(0, Math.min(6, base.dayOfWeek));
+    if (!Number.isInteger(out.dayOfWeek) && daysOfWeek.length === 1) out.dayOfWeek = daysOfWeek[0]; // single day
+    if (daysOfWeek.length > 1) out.type = 'weekly-multi'; // multi-day
+  }
+
+  if (out.type === 'every-x-weeks') {
+    const interval = Number(base.interval);
+    if (Number.isFinite(interval) && interval >= 1) out.interval = Math.floor(interval);
+    const dw = Number.isInteger(base.day) ? base.day : dayNameToIndex(base.day);
+    if (Number.isInteger(dw)) out.dayOfWeek = Math.max(0, Math.min(6, dw));
+  }
+
+  if (out.type === 'monthly') {
+    const dom = Number(base.dayOfMonth ?? base.day);
+    if (Number.isFinite(dom)) out.dayOfMonth = Math.min(Math.max(Math.floor(dom), 1), 31);
+  }
+
   return out;
 }
 
-// ===== Midnight-window evaluator =====
+// ===== Midnight-window evaluator (cron controls time-of-day) =====
 function evaluateCadenceDue(vendor, now) {
   const cadence = parseCadence(vendor.cadence || vendor.cadenceText || vendor.cadenceString);
   const tz = cadence.timeZone || DEFAULT_TZ;
@@ -111,41 +145,41 @@ function evaluateCadenceDue(vendor, now) {
   const dowNow = todayStart.getUTCDay();
 
   const lastWindow = vendor.lastEmailWindowStart ? new Date(vendor.lastEmailWindowStart) : null;
-  const alreadySentFor = (ws) => lastWindow && ws && lastWindow.getTime() === ws.getTime();
+  const sentFor = (ws) => lastWindow && ws && lastWindow.getTime() === ws.getTime();
 
   // DAILY → eligible any time after today's local midnight
   if (cadence.type === 'daily') {
     const windowStart = todayStart;
-    return { shouldSend: zonedNow >= windowStart && !alreadySentFor(windowStart), windowStart };
+    return { shouldSend: zonedNow >= windowStart && !sentFor(windowStart), windowStart };
   }
 
   // WEEKLY (single day) → only on the target weekday, from local midnight
   if (cadence.type === 'weekly') {
-    const target = typeof cadence.dayOfWeek === 'number' ? cadence.dayOfWeek : 2; // default Tue
+    const target = Number.isInteger(cadence.dayOfWeek) ? cadence.dayOfWeek : 2; // default Tue
     const windowStart = startOfWeekdayWindow(now, tz, target);
     if (dowNow !== target) return { shouldSend: false, windowStart };
-    return { shouldSend: zonedNow >= windowStart && !alreadySentFor(windowStart), windowStart };
+    return { shouldSend: zonedNow >= windowStart && !sentFor(windowStart), windowStart };
   }
 
   // WEEKLY MULTI → any selected weekday, from local midnight
   if (cadence.type === 'weekly-multi' || cadence.type?.includes?.('select')) {
-    const days = Array.isArray(cadence.daysOfWeek)
-      ? cadence.daysOfWeek
-      : Array.isArray(vendor.daysOfWeek)
-      ? vendor.daysOfWeek
+    const days =
+      Array.isArray(cadence.daysOfWeek) ? cadence.daysOfWeek
+      : Array.isArray(vendor.daysOfWeek) ? vendor.daysOfWeek
+      : Array.isArray(vendor.days) ? vendor.days.map(dayNameToIndex).filter(n => Number.isInteger(n))
       : [];
     const windowStart = todayStart;
     const isSelected = days.includes(dowNow);
-    return { shouldSend: isSelected && zonedNow >= windowStart && !alreadySentFor(windowStart), windowStart };
+    return { shouldSend: isSelected && zonedNow >= windowStart && !sentFor(windowStart), windowStart };
   }
 
   // EVERY X WEEKS (on a weekday) → only on target weekday; ensure >= interval weeks between windows
   if (cadence.type === 'every-x-weeks') {
     const interval = Number.isFinite(cadence.interval) ? Math.max(1, cadence.interval) : 2;
-    const target = typeof cadence.dayOfWeek === 'number' ? cadence.dayOfWeek : 2;
+    const target = Number.isInteger(cadence.dayOfWeek) ? cadence.dayOfWeek : 2;
     const windowStart = startOfWeekdayWindow(now, tz, target);
     if (dowNow !== target) return { shouldSend: false, windowStart };
-    if (alreadySentFor(windowStart)) return { shouldSend: false, windowStart };
+    if (sentFor(windowStart)) return { shouldSend: false, windowStart };
     if (!lastWindow) return { shouldSend: zonedNow >= windowStart, windowStart };
     const weeksBetween = Math.floor((windowStart - lastWindow) / (7 * 24 * 60 * 60 * 1000));
     return { shouldSend: weeksBetween >= interval && zonedNow >= windowStart, windowStart };
@@ -153,14 +187,14 @@ function evaluateCadenceDue(vendor, now) {
 
   // MONTHLY (on day-of-month) → only on that calendar day, from local midnight
   if (cadence.type === 'monthly') {
-    const dom = cadence.dayOfMonth ?? 1;
+    const dom = cadence.dayOfMonth ?? cadence.day ?? 1;
     const windowStart = startOfMonthDayWindow(now, tz, dom);
     const isTodayDom =
       todayStart.getUTCDate() === windowStart.getUTCDate() &&
       todayStart.getUTCMonth() === windowStart.getUTCMonth() &&
       todayStart.getUTCFullYear() === windowStart.getUTCFullYear();
     if (!isTodayDom) return { shouldSend: false, windowStart };
-    return { shouldSend: zonedNow >= windowStart && !alreadySentFor(windowStart), windowStart };
+    return { shouldSend: zonedNow >= windowStart && !sentFor(windowStart), windowStart };
   }
 
   return { shouldSend: false, windowStart: null };
@@ -224,23 +258,22 @@ async function sendMailGraphAPI(toEmail, subject, bodyHtml) {
   return res.status; // 202 expected
 }
 
-// ===== Job runner (with simple Mongo lock to avoid overlaps) =====
+// ===== Job runner with simple Mongo lock =====
 async function runJob() {
   const db = await getDb();
   const vendors = db.collection('Vendors');
   const orders = db.collection('Orders');
-  const jobs = db.collection('Jobs'); // for lock
+  const jobs = db.collection('Jobs'); // lock collection
 
-  // Ensure TTL index for lock auto-expire (idempotent)
+  // TTL index for auto-clearing locks (idempotent)
   await jobs.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }).catch(() => {});
 
-  // Acquire lock via strict insert
+  // Acquire lock via strict insert (expires in 15 minutes)
   const lockId = 'send_vendor_email_lock';
   const expireAt = new Date(Date.now() + 15 * 60 * 1000);
   try {
     await jobs.insertOne({ _id: lockId, expireAt });
-  } catch (e) {
-    // Another run in progress
+  } catch {
     console.log('🔒 Another run is in progress. Exiting.');
     return;
   }
@@ -282,7 +315,7 @@ async function runJob() {
         );
         console.log(`✅ Sent to ${vendor.vendorEmail} — HTTP ${status}`);
 
-        // Mark sent + close orders
+        // Mark orders inactive and set last window/sent
         const ids = items.map(o => (o._id instanceof ObjectId ? o._id : new ObjectId(o._id)));
         await orders.updateMany({ _id: { $in: ids } }, { $set: { isActive: false } });
         await vendors.updateOne(
@@ -303,7 +336,7 @@ async function runJob() {
   }
 }
 
-// ===== Vercel default export (accepts GET/POST) with shared-secret auth =====
+// ===== Vercel default export with secret auth =====
 module.exports = async function handler(req, res) {
   try {
     const token = req.headers['x-cron-secret'] || req.query?.token;
